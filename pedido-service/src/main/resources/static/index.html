@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Loja - Microserviços</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="cartao">
+    <h1>Fazer pedido</h1>
+
+    <label>Produto
+        <select id="produto"></select>
+    </label>
+
+    <label>Quantidade
+        <input id="quantidade" type="number" value="1" min="1">
+    </label>
+
+    <button onclick="fazerPedido()">Pedir</button>
+
+    <p id="resultado"></p>
+</div>
+
+<script>
+    const resultado = document.getElementById("resultado");
+
+    async function carregarProdutos() {
+      const resposta = await fetch("/pedidos/produtos");
+
+      if (!resposta.ok) {
+        resultado.textContent = `Erro ${resposta.status}: ${await resposta.text()}`;
+        resultado.className = "erro";
+        return;
+      }
+
+      const produtos = await resposta.json();
+      const select = document.getElementById("produto");
+
+      produtos.forEach(p => {
+        const opcao = document.createElement("option");
+        opcao.value = p.id;
+        opcao.textContent = `${p.nome} - R$ ${p.preco.toFixed(2)}`;
+        select.appendChild(opcao);
+      });
+    }
+
+    async function fazerPedido() {
+      const produtoId = Number(document.getElementById("produto").value);
+      const quantidade = Number(document.getElementById("quantidade").value);
+
+      const resposta = await fetch("/pedidos", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ produtoId: produtoId, quantidade: quantidade })
+      });
+
+      if (resposta.ok) {
+        const pedido = await resposta.json();
+        resultado.textContent = `Pedido: ${pedido.quantidade}x ${pedido.produto} - total R$ ${pedido.total.toFixed(2)}`;
+        resultado.className = "sucesso";
+      } else {
+        resultado.textContent = `Erro ${resposta.status}: ${await resposta.text()}`;
+        resultado.className = "erro";
+      }
+    }
+
+    carregarProdutos();
+</script>
+</body>
+</html>
